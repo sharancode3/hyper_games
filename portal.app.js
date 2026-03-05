@@ -1,54 +1,19 @@
-/* portal.app.js — Game Portal with Authentication and Progress Tracking
-   Features:
-   - User authentication check
-   - Multiple games with automatic progress tracking
-   - Score submission to backend
-   - Replay functionality
-*/
-
 const API_URL = 'http://localhost:3000/api';
 
-// Check authentication on page load
-let currentUser = null;
-let authToken = null;
-
-window.addEventListener('DOMContentLoaded', () => {
-  authToken = localStorage.getItem('authToken');
-  const userStr = localStorage.getItem('user');
-  
-  if (!authToken || !userStr) {
-    // Redirect to login
-    window.location.href = 'login.html';
-    return;
-  }
-  
-  currentUser = JSON.parse(userStr);
-  document.getElementById('username').textContent = currentUser.username || 'Guest';
-  
-  // Logout handler
-  document.getElementById('logoutBtn').addEventListener('click', () => {
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('user');
-    window.location.href = 'login.html';
-  });
-});
-
-// CONFIG: All available games
 const GAMES = [
-  { id:'snake', title:'Neon Serpent', category:'Arcade', embed:'./games/snake/index.html', blurb:'Synth snake combos with chaining boosts.' },
-  { id:'pingpong', title:'Loop Rally', category:'Arcade', embed:'./games/pingpong/index.html', blurb:'Laser-fast paddle rallies with looping shots.' },
-  { id:'bubbleshooter', title:'Orb Pop Deluxe', category:'Arcade', embed:'./games/bubbleshooter/index.html', blurb:'Color-matching bubble calm with score climbs.' },
-  { id:'carracing', title:'Turbo Drift', category:'Racing', embed:'./games/carracing/index.html', blurb:'Slide through neon corners and chase best laps.' },
-  { id:'puzzle', title:'Slide Forge', category:'Puzzle', embed:'./games/puzzle/index.html', blurb:'Craft the picture one satisfying move at a time.' },
-  { id:'crazytype', title:'Key Frenzy', category:'Skill', embed:'./games/monkeytyping/index.html', blurb:'Typing gauntlet for lightning-fast accuracy.' },
-  { id:'dino', title:'Astro Strider', category:'Arcade', embed:'./games/dino/index.html', blurb:'Dash over cosmic cliffs and dodge meteors.' },
-  { id:'wordguesser', title:'Cipher Quest', category:'Puzzle', embed:'./games/wordguesser/index.html', blurb:'Guess words under pressure with streak bonuses.' },
-  { id:'reactiontime', title:'Blink Lab', category:'Skill', embed:'./games/reactiontime/index.html', blurb:'Minimal reflex trials to shave off milliseconds.' },
-  { id:'haunted-calculator', title:'Phantom Calc', category:'Puzzle', embed:'./games/haunted/index.html', blurb:'Haunted math riddles that glitch the display.' },
-  { id:'wordle', title:'Word Pulse', category:'Puzzle', embed:'./games/wordle/index.html', blurb:'Word-wave challenge with hints and penalties.' }
+  { id:'snake', title:'Neon Serpent', category:'arcade', embed:'./games/snake/index.html', blurb:'Synth snake combos with chaining boosts.' },
+  { id:'pingpong', title:'Loop Rally', category:'arcade', embed:'./games/pingpong/index.html', blurb:'Laser-fast paddle rallies with looping shots.' },
+  { id:'bubbleshooter', title:'Orb Pop Deluxe', category:'arcade', embed:'./games/bubbleshooter/index.html', blurb:'Color-matching bubble calm with score climbs.' },
+  { id:'carracing', title:'Turbo Drift', category:'racing', embed:'./games/carracing/index.html', blurb:'Slide through neon corners and chase best laps.' },
+  { id:'puzzle', title:'Slide Forge', category:'puzzle', embed:'./games/puzzle/index.html', blurb:'Craft the picture one satisfying move at a time.' },
+  { id:'crazytype', title:'Key Frenzy', category:'skill', embed:'./games/monkeytyping/index.html', blurb:'Typing gauntlet for lightning-fast accuracy.' },
+  { id:'dino', title:'Astro Strider', category:'arcade', embed:'./games/dino/index.html', blurb:'Dash over cosmic cliffs and dodge meteors.' },
+  { id:'wordguesser', title:'Cipher Quest', category:'puzzle', embed:'./games/wordguesser/index.html', blurb:'Guess words under pressure with streak bonuses.' },
+  { id:'reactiontime', title:'Blink Lab', category:'skill', embed:'./games/reactiontime/index.html', blurb:'Minimal reflex trials to shave off milliseconds.' },
+  { id:'haunted-calculator', title:'Phantom Calc', category:'puzzle', embed:'./games/haunted/index.html', blurb:'Haunted math riddles that glitch the display.' },
+  { id:'wordle', title:'Word Pulse', category:'puzzle', embed:'./games/wordle/index.html', blurb:'Word-wave challenge with hints and penalties.' }
 ];
 
-// Thumbnail file paths (SVG). Replace with real art assets later.
 const THUMBS = {
   snake: 'assets/thumbs/snake.svg',
   pingpong: 'assets/thumbs/pingpong.svg',
@@ -59,377 +24,447 @@ const THUMBS = {
   dino: 'assets/thumbs/dino.svg',
   wordguesser: 'assets/thumbs/wordguesser.svg',
   reactiontime: 'assets/thumbs/reactiontime.svg',
-  'haunted-calculator': 'assets/thumbs/haunted-calculator.svg'
-  ,wordle: 'assets/thumbs/wordle.svg'
+  'haunted-calculator': 'assets/thumbs/haunted-calculator.svg',
+  wordle: 'assets/thumbs/wordle.svg'
 };
 
-// Feedback opt-out key
-const FEEDBACK_OPT_KEY = 'portal_feedback_optout';
+const state = {
+  user: null,
+  token: null,
+  query: '',
+  category: 'all',
+  filtered: [...GAMES],
+  currentGame: null,
+  currentIframe: null,
+  paused: false,
+  themeIndex: 0
+};
 
-const grid = document.getElementById('grid');
-const fsGame = document.getElementById('fsGame'); // fullscreen container
+const gridEl = document.getElementById('grid');
+const fsGameEl = document.getElementById('fsGame');
+const emptyEl = document.getElementById('portalEmpty');
+const searchEl = document.getElementById('search');
+const usernameEl = document.getElementById('username');
+const statTotalEl = document.getElementById('statTotal');
+const statPlayedEl = document.getElementById('statPlayed');
+const statBestEl = document.getElementById('statBest');
 
-if (!grid || !fsGame) {
-  console.error('portal.app.js: required DOM elements missing (#grid or #fsGame).');
-} else {
+init();
 
-  // small background particle canvas (optional, non-blocking)
-  (function smallParticles(){
-    const c = document.getElementById('bgCanvas');
-    if (!c) return;
-    const ctx = c.getContext('2d');
-    function fit(){ c.width = innerWidth; c.height = innerHeight; }
-    fit(); addEventListener('resize', fit);
-    const palette = ['255,0,77','0,240,255','124,58,237'];
-    const parts = Array.from({length: Math.max(12, Math.floor((c.width*c.height)/120000))}, () => ({
-      x: Math.random()*c.width,
-      y: Math.random()*c.height,
-      r: Math.random()*1.8+0.4,
-      a: Math.random()*0.08+0.03,
-      vx: (Math.random()-0.5)*0.25,
-      vy: (Math.random()-0.5)*0.08,
-      tint: palette[Math.floor(Math.random()*palette.length)]
-    }));
-    (function tick(){
-      ctx.clearRect(0,0,c.width,c.height);
-      for (const p of parts) {
-        p.x += p.vx; p.y += p.vy;
-        if (p.x < -10) p.x = c.width + 10; if (p.x > c.width + 10) p.x = -10;
-        if (p.y < -10) p.y = c.height + 10; if (p.y > c.height + 10) p.y = -10;
-        ctx.beginPath(); ctx.fillStyle = `rgba(${p.tint},${p.a})`; ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill();
-      }
-      requestAnimationFrame(tick);
-    })();
-  })();
+function init() {
+  if (!gridEl || !fsGameEl) {
+    console.error('Portal UI not initialized: required elements missing.');
+    return;
+  }
 
-  // Search functionality
-  const searchInput = document.getElementById('search');
-  let filteredGames = [...GAMES];
-  
-  searchInput && searchInput.addEventListener('input', (e) => {
-    const query = e.target.value.toLowerCase();
-    filteredGames = GAMES.filter(g => 
-      g.title.toLowerCase().includes(query) || 
-      g.category.toLowerCase().includes(query)
-    );
-    render();
+  if (!checkAuth()) return;
+  bindStaticControls();
+  initBackgroundParticles();
+  updateStats();
+  applyFilters();
+  autoLaunchFromQuery();
+}
+
+function checkAuth() {
+  state.token = localStorage.getItem('authToken');
+  const rawUser = localStorage.getItem('user');
+  if (!state.token || !rawUser) {
+    window.location.href = 'login.html';
+    return false;
+  }
+
+  try {
+    state.user = JSON.parse(rawUser);
+  } catch (error) {
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('user');
+    window.location.href = 'login.html';
+    return false;
+  }
+
+  if (usernameEl) {
+    usernameEl.textContent = state.user.username || 'Player';
+  }
+  return true;
+}
+
+function bindStaticControls() {
+  const logoutBtn = document.getElementById('logoutBtn');
+  const themeToggleBtn = document.getElementById('themeToggle');
+  const pills = [...document.querySelectorAll('.cat-pill')];
+
+  logoutBtn?.addEventListener('click', () => {
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('user');
+    window.location.href = 'login.html';
   });
 
-  const playCTA = document.getElementById('ctaPlay');
-  playCTA && playCTA.addEventListener('click', () => {
-    grid?.scrollIntoView({ behavior:'smooth', block:'start' });
+  searchEl?.addEventListener('input', (event) => {
+    state.query = event.target.value.trim().toLowerCase();
+    applyFilters();
   });
 
-  // Theme toggle cycling through presets
-  const themeToggle = document.getElementById('themeToggle');
-  const themes = ['theme-ocean','theme-sunset','theme-forest'];
-  let themeIndex = 0;
-  themeToggle && themeToggle.addEventListener('click', () => {
+  pills.forEach((pill) => {
+    pill.addEventListener('click', () => {
+      pills.forEach((item) => item.classList.remove('active'));
+      pill.classList.add('active');
+      state.category = pill.dataset.category || 'all';
+      applyFilters();
+    });
+  });
+
+  const themes = ['theme-ocean', 'theme-sunset', 'theme-forest'];
+  themeToggleBtn?.addEventListener('click', () => {
     document.body.classList.remove(...themes);
-    const next = themes[themeIndex];
-    document.body.classList.add(next);
-    themeIndex = (themeIndex + 1) % themes.length;
+    const theme = themes[state.themeIndex];
+    if (theme !== 'theme-ocean') {
+      document.body.classList.add(theme);
+    }
+    state.themeIndex = (state.themeIndex + 1) % themes.length;
   });
 
-  // render grid
-  function createCard(g){
-    const card = document.createElement('div');
-    card.className = 'card';
-    card.dataset.id = g.id;
-    const thumb = THUMBS[g.id] ? `<img class="thumb" src="${THUMBS[g.id]}" alt="${escapeHtml(g.title)} thumbnail"/>` : `<div class="logo" aria-hidden="true">${g.title.split(' ').map(w=>w[0]).join('').toUpperCase()}</div>`;
-    card.innerHTML = `
-      ${thumb}
-      <div class="meta">
-        <div class="title">${g.title}</div>
-        <div class="cat">${g.category}</div>
-        <p class="blurb">${g.blurb || ''}</p>
+  window.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && fsGameEl.classList.contains('active')) {
+      closeFullscreenGame();
+    }
+  });
+}
+
+function applyFilters() {
+  state.filtered = GAMES.filter((game) => {
+    const categoryPass = state.category === 'all' || game.category === state.category;
+    if (!categoryPass) return false;
+
+    if (!state.query) return true;
+    return (
+      game.title.toLowerCase().includes(state.query) ||
+      game.category.toLowerCase().includes(state.query) ||
+      game.blurb.toLowerCase().includes(state.query)
+    );
+  });
+
+  renderGrid();
+}
+
+function renderGrid() {
+  gridEl.innerHTML = '';
+  if (state.filtered.length === 0) {
+    emptyEl?.classList.remove('hidden');
+    return;
+  }
+
+  emptyEl?.classList.add('hidden');
+  state.filtered.forEach((game) => gridEl.appendChild(createCard(game)));
+}
+
+function createCard(game) {
+  const card = document.createElement('article');
+  card.className = 'card';
+  card.setAttribute('role', 'button');
+  card.setAttribute('tabindex', '0');
+  card.dataset.id = game.id;
+
+  const fallbackLogo = game.title.split(' ').map((word) => word[0]).join('').slice(0, 2).toUpperCase();
+  const thumb = THUMBS[game.id]
+    ? `<img class="thumb" src="${THUMBS[game.id]}" alt="${escapeHtml(game.title)} thumbnail" loading="lazy" />`
+    : `<div class="logo" aria-hidden="true">${fallbackLogo}</div>`;
+
+  card.innerHTML = `
+    ${thumb}
+    <div class="meta">
+      <div class="title">${escapeHtml(game.title)}</div>
+      <div class="cat">${escapeHtml(game.category)}</div>
+      <p class="blurb">${escapeHtml(game.blurb)}</p>
+      <div class="play-badge">Play Now</div>
+    </div>
+  `;
+
+  card.addEventListener('click', () => openFullscreenGame(game));
+  card.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      openFullscreenGame(game);
+    }
+  });
+
+  return card;
+}
+
+function autoLaunchFromQuery() {
+  const launchId = new URLSearchParams(window.location.search).get('game');
+  if (!launchId) return;
+  const game = GAMES.find((item) => item.id === launchId);
+  if (!game) return;
+  setTimeout(() => openFullscreenGame(game), 80);
+}
+
+function openFullscreenGame(game) {
+  state.currentGame = game;
+  state.paused = false;
+
+  fsGameEl.classList.add('active');
+  fsGameEl.setAttribute('aria-hidden', 'false');
+  fsGameEl.innerHTML = `
+    <div class="stage">
+      <aside class="hud-panel" aria-label="Player HUD">
+        <div class="hud-row"><span>Player</span><span>${escapeHtml(state.user?.username || 'Player')}</span></div>
+        <div class="hud-row"><span>Game</span><span>${escapeHtml(game.title)}</span></div>
+        <div class="hud-row"><span>Score</span><span id="hudScore">—</span></div>
+        <div class="hud-row"><span>High</span><span id="hudHigh">${getStoredHigh(game.id) ?? '—'}</span></div>
+        <div class="hud-mini-help">Progress saves automatically after each run.</div>
+      </aside>
+
+      <div class="game-frame" id="gameFrame"></div>
+
+      <div class="game-controls" aria-label="Game controls">
+        <button class="gc-btn" id="btnPause">Pause</button>
+        <button class="gc-btn hidden" id="btnResume">Resume</button>
+        <button class="gc-btn" id="btnReplay">Replay</button>
+        <button class="gc-btn exit" id="btnExit">Exit</button>
       </div>
-      <div class="play-badge">Play</div>
-    `;
-    card.addEventListener('click', ()=> openFullscreenGame(g));
-    return card;
-  }
-  function render(){
-    grid.innerHTML = '';
-    filteredGames.forEach((g,i)=> {
-      const c = createCard(g);
-      c.style.animationDelay = `${80 + i*80}ms`;
-      grid.appendChild(c);
-    });
-    
-    if (filteredGames.length === 0) {
-      grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: #ff6b6b; padding: 40px;">No games found</div>';
-    }
-  }
-  render();
 
-  // Auto-launch game if query param provided (enables direct HUD play from homepage)
-  const launchParam = new URLSearchParams(location.search).get('game');
-  if (launchParam){
-    const autoGame = GAMES.find(g=>g.id===launchParam);
-    if (autoGame){
-      // Slight delay to ensure DOM ready
-      setTimeout(()=> openFullscreenGame(autoGame), 50);
-    }
-  }
+      <div id="pauseLayer" class="pause-layer">PAUSED</div>
+    </div>
+  `;
 
-  // helper to build iframe (ensures consistent z-index/pointer behavior)
-  function buildIframe(src){
-    const iframe = document.createElement('iframe');
-    iframe.src = src;
-    iframe.allowFullscreen = true;
-    iframe.sandbox = 'allow-scripts allow-forms allow-same-origin';
-    iframe.style.width = '100%';
-    iframe.style.height = '100%';
-    iframe.style.border = '0';
-    iframe.loading = 'eager';
-    iframe.style.zIndex = '1002';
-    iframe.style.pointerEvents = 'auto';
-    return iframe;
-  }
+  const gameFrame = document.getElementById('gameFrame');
+  attachNewIframe(game.embed, gameFrame);
+  bindFullscreenControls();
+}
 
-  // state
-  let currentGame = null;
-  let currentIframe = null;
-  let awaitingReplyAfterGameOver = false; // flag indicates game_over received and waiting for key to auto-open reply
-  let replyVisible = false;
+function bindFullscreenControls() {
+  const pauseBtn = document.getElementById('btnPause');
+  const resumeBtn = document.getElementById('btnResume');
+  const replayBtn = document.getElementById('btnReplay');
+  const exitBtn = document.getElementById('btnExit');
+  const gameFrame = document.getElementById('gameFrame');
+  const pauseLayer = document.getElementById('pauseLayer');
 
-  // Open fullscreen game with right-side controls
-  let paused = false;
-  function openFullscreenGame(game){
-    currentGame = game;
-    paused = false;
-    fsGame.classList.add('active');
-    fsGame.setAttribute('aria-hidden','false');
-    fsGame.innerHTML = `
-      <div class="stage">
-        <div class="game-frame" id="gameFrame"></div>
-        <aside class="hud-panel" id="hudPanel" aria-label="Player Stats">
-          <div class="hud-row hud-user">👤 <span id="hudUser">${escapeHtml(currentUser?.username||'Player')}</span></div>
-          <div class="hud-row hud-game">🎮 <span id="hudGame">${escapeHtml(game.title)}</span></div>
-          <div class="hud-row">Score: <span id="hudScore">—</span></div>
-          <div class="hud-row">High: <span id="hudHigh">${getStoredHigh(game.id) ?? '—'}</span></div>
-          <div class="hud-mini-help">(Scores update after each run)</div>
-        </aside>
-        <div class="game-controls" aria-label="Game Controls">
-          <button class="gc-btn" id="btnPause">⏸ Pause</button>
-          <button class="gc-btn hidden" id="btnResume">▶ Resume</button>
-          <button class="gc-btn exit" id="btnExit">⌂ Home</button>
-          <button class="gc-btn" id="btnReplay">↻ Replay</button>
-        </div>
-        <div class="pause-layer" id="pauseLayer" aria-hidden="true"><div class="pause-msg">PAUSED</div></div>
-      </div>`;
-    const frame = document.getElementById('gameFrame');
-    attachNewIframeToWrap(game.embed, frame);
-    wireFullscreenControls();
-    setTimeout(()=> { try { currentIframe?.contentWindow?.focus(); } catch(e){} }, 350);
-  }
+  pauseBtn?.addEventListener('click', () => {
+    if (state.paused || !gameFrame || !pauseLayer) return;
+    state.paused = true;
+    pauseLayer.classList.add('show');
+    gameFrame.style.filter = 'blur(3px) brightness(.6)';
+    pauseBtn.classList.add('hidden');
+    resumeBtn?.classList.remove('hidden');
+  });
 
-  function wireFullscreenControls(){
-    const btnPause = document.getElementById('btnPause');
-    const btnResume = document.getElementById('btnResume');
-    const btnExit = document.getElementById('btnExit');
-    const btnReplay = document.getElementById('btnReplay');
-    const pauseLayer = document.getElementById('pauseLayer');
-    const frame = document.getElementById('gameFrame');
-
-    btnPause?.addEventListener('click', ()=>{
-      if (paused) return; paused = true;
-      pauseLayer.classList.add('show');
-      btnPause.classList.add('hidden');
-      btnResume.classList.remove('hidden');
-      frame.style.filter = 'blur(3px) brightness(.6)';
-    });
-    btnResume?.addEventListener('click', ()=>{
-      if (!paused) return; paused = false;
-      pauseLayer.classList.remove('show');
-      btnResume.classList.add('hidden');
-      btnPause.classList.remove('hidden');
-      frame.style.filter = 'none';
-      try { currentIframe?.contentWindow?.focus(); } catch(e){}
-    });
-    btnExit?.addEventListener('click', ()=>{
-      if (replyVisible){ return; }
-      exitFullscreen();
-    });
-    btnReplay?.addEventListener('click', ()=>{
-      if (!frame) return;
-      if (currentIframe && currentIframe.parentNode) try { currentIframe.remove(); } catch(e){}
-      attachNewIframeToWrap(currentGame.embed, frame);
-      if (paused){ paused=false; pauseLayer.classList.remove('show'); btnResume.classList.add('hidden'); btnPause.classList.remove('hidden'); frame.style.filter='none'; }
-    });
-  }
-
-  function attachNewIframeToWrap(src, wrapEl){
-    if (!wrapEl) return;
-    // remove previous iframe
-    if (currentIframe && currentIframe.parentNode) try { currentIframe.remove(); } catch(e){}
-    // create new
-    const ifr = buildIframe(src);
-    wrapEl.appendChild(ifr);
-    currentIframe = ifr;
-
-    // Ensure the iframe posts focus once loaded
-    ifr.addEventListener('load', ()=> {
-      try { ifr.contentWindow && ifr.contentWindow.focus && ifr.contentWindow.focus(); } catch(e){}
-    });
-  }
-
-  function exitFullscreen(){
-    if (currentIframe && currentIframe.parentNode) try { currentIframe.remove(); } catch(e){}
-    currentIframe = null; currentGame = null; awaitingReplyAfterGameOver = false; replyVisible = false;
-    fsGame.classList.remove('active');
-    fsGame.setAttribute('aria-hidden','true');
-    fsGame.innerHTML = '';
-  }
-
-  // PostMessage listener for game over
-  window.addEventListener('message', (ev) => {
-    // In production, restrict origin checking here
-    let data = ev.data;
-    try { if (typeof data === 'string') data = JSON.parse(data); } catch(e) {}
-    if (!data || data.type !== 'game_over') return;
-    
-    // Save progress to backend
-    saveGameProgress(data.gameId || currentGame?.id, data.score, data.stats, data.result);
-    
-    // Update HUD score/high
-    const gid = data.gameId || currentGame?.id;
-    const scoreVal = typeof data.score === 'number' ? data.score : (data.score? Number(data.score): null);
-    if (gid && scoreVal != null){
-      const hs = updateHighIfNeeded(gid, scoreVal);
-      const hudScore = document.getElementById('hudScore');
-      const hudHigh = document.getElementById('hudHigh');
-      if(hudScore) hudScore.textContent = scoreVal;
-      if(hudHigh) hudHigh.textContent = hs;
-    }
-
-    if (data.result === 'lost') {
-      if (localStorage.getItem(FEEDBACK_OPT_KEY)==='1') return; // user opted out
-      awaitingReplyAfterGameOver = true;
-      showReplyBox(data.gameId || data.id || currentGame?.id || 'unknown', data.score ?? null);
+  resumeBtn?.addEventListener('click', () => {
+    if (!state.paused || !gameFrame || !pauseLayer) return;
+    state.paused = false;
+    pauseLayer.classList.remove('show');
+    gameFrame.style.filter = 'none';
+    resumeBtn.classList.add('hidden');
+    pauseBtn?.classList.remove('hidden');
+    try {
+      state.currentIframe?.contentWindow?.focus();
+    } catch (error) {
+      console.warn('Unable to refocus game frame:', error);
     }
   });
 
-  // Save game progress to backend
-  async function saveGameProgress(gameId, score, stats, result) {
-    if (!authToken || !gameId) return;
-    
+  replayBtn?.addEventListener('click', () => {
+    if (!state.currentGame || !gameFrame) return;
+    attachNewIframe(state.currentGame.embed, gameFrame);
+    if (state.paused) {
+      state.paused = false;
+      pauseLayer?.classList.remove('show');
+      gameFrame.style.filter = 'none';
+      resumeBtn?.classList.add('hidden');
+      pauseBtn?.classList.remove('hidden');
+    }
+  });
+
+  exitBtn?.addEventListener('click', () => {
+    closeFullscreenGame();
+  });
+}
+
+function attachNewIframe(src, wrap) {
+  if (!wrap) return;
+  if (state.currentIframe?.parentNode) {
+    state.currentIframe.remove();
+  }
+
+  const iframe = document.createElement('iframe');
+  iframe.src = src;
+  iframe.allowFullscreen = true;
+  iframe.sandbox = 'allow-scripts allow-forms allow-same-origin';
+  iframe.style.width = '100%';
+  iframe.style.height = '100%';
+  iframe.style.border = '0';
+  iframe.loading = 'eager';
+
+  iframe.addEventListener('load', () => {
     try {
-      const response = await fetch(`${API_URL}/progress`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`
-        },
-        body: JSON.stringify({
-          gameId,
-          score: score || 0,
-          stats: stats || {},
-          result: result || 'completed'
-        })
-      });
-      
-      if (response.ok) {
-        console.log('Progress saved successfully');
-      }
+      iframe.contentWindow?.focus();
     } catch (error) {
-      console.log('Could not save progress (offline mode):', error);
-      // Fallback to localStorage
-      const offlineProgress = JSON.parse(localStorage.getItem('offlineProgress') || '[]');
-      offlineProgress.push({
+      console.warn('Unable to focus game iframe:', error);
+    }
+  });
+
+  wrap.appendChild(iframe);
+  state.currentIframe = iframe;
+}
+
+function closeFullscreenGame() {
+  if (state.currentIframe?.parentNode) {
+    state.currentIframe.remove();
+  }
+  state.currentIframe = null;
+  state.currentGame = null;
+  state.paused = false;
+  fsGameEl.classList.remove('active');
+  fsGameEl.setAttribute('aria-hidden', 'true');
+  fsGameEl.innerHTML = '';
+}
+
+window.addEventListener('message', (event) => {
+  let payload = event.data;
+  try {
+    if (typeof payload === 'string') {
+      payload = JSON.parse(payload);
+    }
+  } catch (error) {
+    return;
+  }
+
+  if (!payload || payload.type !== 'game_over') return;
+
+  const gameId = payload.gameId || state.currentGame?.id;
+  const score = Number(payload.score) || 0;
+
+  saveGameProgress(gameId, score, payload.stats, payload.result || 'completed');
+  const best = updateHighIfNeeded(gameId, score);
+  updateHudScore(score, best);
+  updateStats();
+});
+
+function updateHudScore(score, high) {
+  const scoreEl = document.getElementById('hudScore');
+  const highEl = document.getElementById('hudHigh');
+  if (scoreEl) scoreEl.textContent = String(score);
+  if (highEl) highEl.textContent = String(high);
+}
+
+function updateStats() {
+  const progress = JSON.parse(localStorage.getItem('offlineProgress') || '[]');
+  const byCategory = { arcade: 0, puzzle: 0, racing: 0, skill: 0 };
+
+  progress.forEach((entry) => {
+    const game = GAMES.find((item) => item.id === entry.gameId);
+    if (game && byCategory[game.category] != null) {
+      byCategory[game.category] += 1;
+    }
+  });
+
+  const top = Object.entries(byCategory).sort((a, b) => b[1] - a[1])[0]?.[0] || 'arcade';
+  if (statTotalEl) statTotalEl.textContent = String(GAMES.length);
+  if (statPlayedEl) statPlayedEl.textContent = String(progress.length);
+  if (statBestEl) statBestEl.textContent = top;
+}
+
+async function saveGameProgress(gameId, score, stats, result) {
+  if (!gameId || !state.token) return;
+
+  try {
+    await fetch(`${API_URL}/progress`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${state.token}`
+      },
+      body: JSON.stringify({
         gameId,
         score,
-        stats,
-        result,
-        timestamp: new Date().toISOString()
-      });
-      localStorage.setItem('offlineProgress', JSON.stringify(offlineProgress));
-    }
-  }
-
-  // show reply UI (disables closing while visible). If already visible, no-op.
-  function showReplyBox(gameId, score){
-    if (replyVisible) return;
-    replyVisible = true;
-    // disable close buttons/backdrop by leaving replyVisible true
-    // build box
-    const existing = document.getElementById('portal-reply-box');
-    if (existing) existing.remove();
-    const g = GAMES.find(x=>x.id===gameId);
-    const title = g ? g.title : (gameId || 'Game');
-
-    const box = document.createElement('div');
-    box.id = 'portal-reply-box';
-    Object.assign(box.style, {
-      position:'fixed', right:'20px', bottom:'20px', width:'340px', maxWidth:'calc(100% - 40px)',
-      borderRadius:'12px', padding:'12px', background:'linear-gradient(180deg,rgba(8,12,18,0.98),#000)',
-      boxShadow:'0 18px 60px rgba(2,6,23,0.8)', zIndex:13050, color:'#eaf9ff', fontFamily:'Inter, system-ui, sans-serif'
+        stats: stats || {},
+        result: result || 'completed'
+      })
     });
-    box.innerHTML = `
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-        <div style="font-weight:800">${escapeHtml(title)}</div>
-        <button id="reply-close" aria-label="Close feedback" style="background:transparent;border:0;color:#9fb0c6;cursor:pointer">✕</button>
-      </div>
-      <div style="font-size:13px;color:#9fb0c6;margin-bottom:8px">You lost • Score: ${score ?? '—'} (optional feedback)</div>
-      <textarea id="reply-text" rows="3" placeholder="Quick feedback (optional)" style="width:100%;border-radius:8px;padding:8px;border:1px solid rgba(255,255,255,0.04);background:rgba(255,255,255,0.01);color:#eaf9ff"></textarea>
-      <div class="opt-row"><input type="checkbox" id="reply-optout" /> <label for="reply-optout">Don't ask again</label></div>
-      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
-        <button id="reply-send" style="padding:8px 12px;border-radius:8px;border:0;background:linear-gradient(180deg,#00b7e6,#00d5ff);color:#041017;font-weight:800;cursor:pointer">Send</button>
-        <button id="reply-skip" style="padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:#9fb0c6;cursor:pointer">Skip</button>
-      </div>
-    `;
-    document.body.appendChild(box);
+  } catch (error) {
+    const offlineProgress = JSON.parse(localStorage.getItem('offlineProgress') || '[]');
+    offlineProgress.push({
+      gameId,
+      score,
+      stats: stats || {},
+      result: result || 'completed',
+      timestamp: new Date().toISOString()
+    });
+    localStorage.setItem('offlineProgress', JSON.stringify(offlineProgress));
+  }
+}
 
-    // Disable modal close behavior while reply visible by setting replyVisible true (close handlers check it)
-    // Hook buttons
-    function finishClose(){
-      const opt = document.getElementById('reply-optout');
-      if (opt && opt.checked){ localStorage.setItem(FEEDBACK_OPT_KEY,'1'); }
-      replyVisible = false;
-      const el = document.getElementById('portal-reply-box'); if (el) el.remove();
-    }
-    document.getElementById('reply-close').addEventListener('click', finishClose);
-    document.getElementById('reply-skip').addEventListener('click', finishClose);
-    document.getElementById('reply-send').addEventListener('click', () => {
-      const text = document.getElementById('reply-text').value.trim();
-      if (text){
-        const reply = { id:'r_'+Date.now(), gameId, score, text, ts: new Date().toISOString() };
-        try { const arr = JSON.parse(localStorage.getItem('gameReplies')||'[]'); arr.push(reply); localStorage.setItem('gameReplies', JSON.stringify(arr)); } catch(e){}
-        console.log('Saved reply:', reply);
-      }
-      box.innerHTML = `<div style="padding:18px;text-align:center;color:#baf6ff;font-weight:800">${text? 'Thanks — feedback saved.' : 'Skipped.'}</div>`;
-      setTimeout(finishClose, 900);
+function highScoreKey(gameId) {
+  return `hp_highscore_${state.user?.username || 'guest'}_${gameId}`;
+}
+
+function getStoredHigh(gameId) {
+  const value = localStorage.getItem(highScoreKey(gameId));
+  return value ? Number(value) : null;
+}
+
+function updateHighIfNeeded(gameId, score) {
+  if (!gameId) return score;
+  const previous = getStoredHigh(gameId) ?? 0;
+  if (score > previous) {
+    localStorage.setItem(highScoreKey(gameId), String(score));
+    return score;
+  }
+  return previous;
+}
+
+function escapeHtml(value) {
+  return String(value || '').replace(/[&<>"']/g, (char) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  }[char]));
+}
+
+function initBackgroundParticles() {
+  const canvas = document.getElementById('bgCanvas');
+  if (!canvas) return;
+
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+
+  const fit = () => {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  };
+  fit();
+  window.addEventListener('resize', fit);
+
+  const particles = Array.from({ length: Math.max(14, Math.floor((canvas.width * canvas.height) / 120000)) }, () => ({
+    x: Math.random() * canvas.width,
+    y: Math.random() * canvas.height,
+    radius: Math.random() * 1.8 + 0.5,
+    alpha: Math.random() * 0.1 + 0.03,
+    speedX: (Math.random() - 0.5) * 0.2,
+    speedY: (Math.random() - 0.5) * 0.08
+  }));
+
+  const tick = () => {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    particles.forEach((particle) => {
+      particle.x += particle.speedX;
+      particle.y += particle.speedY;
+
+      if (particle.x < -10) particle.x = canvas.width + 10;
+      if (particle.x > canvas.width + 10) particle.x = -10;
+      if (particle.y < -10) particle.y = canvas.height + 10;
+      if (particle.y > canvas.height + 10) particle.y = -10;
+
+      ctx.beginPath();
+      ctx.fillStyle = `rgba(145, 214, 255, ${particle.alpha})`;
+      ctx.arc(particle.x, particle.y, particle.radius, 0, Math.PI * 2);
+      ctx.fill();
     });
 
-    // (Key-trigger auto open removed to reduce disturbance.)
-  }
+    requestAnimationFrame(tick);
+  };
 
-  // Also support manual test: any key after game_over triggers the reply UI (if awaitingReplyAfterGameOver true)
-  window.addEventListener('keydown', (e) => {
-    if (awaitingReplyAfterGameOver && !replyVisible) {
-      // open the reply for the last known game
-      showReplyBox(currentGame?.id || 'unknown', null);
-      // reset awaiting flag so it doesn't reopen repeatedly
-      awaitingReplyAfterGameOver = false;
-    }
-    // Esc closes modal if reply not visible
-    if (e.key === 'Escape' && !replyVisible) {
-      if (fsGame.classList.contains('active')) exitFullscreen();
-    }
-  });
-
-  // small helper
-  function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, (m) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
-
-  // High score helpers
-  function highKey(gameId){ return `hp_highscore_${currentUser?.username||'guest'}_${gameId}`; }
-  function getStoredHigh(gameId){ const v = localStorage.getItem(highKey(gameId)); return v? Number(v): null; }
-  function updateHighIfNeeded(gameId, score){
-    if(score == null) return getStoredHigh(gameId) ?? score ?? 0;
-    const prev = getStoredHigh(gameId) ?? 0;
-    if(score > prev){ localStorage.setItem(highKey(gameId), String(score)); return score; }
-    return prev;
-  }
-
-} // end main
+  tick();
+}

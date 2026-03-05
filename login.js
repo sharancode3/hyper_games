@@ -5,6 +5,7 @@ const API_URL = 'http://localhost:3000/api';
 const tabs = document.querySelectorAll('.tab');
 const loginForm = document.getElementById('loginForm');
 const signupForm = document.getElementById('signupForm');
+const passwordToggles = document.querySelectorAll('.pass-toggle');
 
 tabs.forEach(tab => {
   tab.addEventListener('click', () => {
@@ -22,6 +23,19 @@ tabs.forEach(tab => {
       signupForm.classList.add('active');
       loginForm.classList.remove('active');
     }
+
+    document.getElementById('loginError')?.classList.remove('show');
+    document.getElementById('signupError')?.classList.remove('show');
+  });
+});
+
+passwordToggles.forEach(toggle => {
+  toggle.addEventListener('click', () => {
+    const targetInput = document.getElementById(toggle.dataset.target);
+    if (!targetInput) return;
+    const isPassword = targetInput.type === 'password';
+    targetInput.type = isPassword ? 'text' : 'password';
+    toggle.textContent = isPassword ? 'Hide' : 'Show';
   });
 });
 
@@ -47,8 +61,7 @@ loginForm.addEventListener('submit', async (e) => {
       localStorage.setItem('authToken', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
       
-      // Redirect to main page
-      window.location.href = 'index.html';
+      window.location.href = 'portal.html';
     } else {
       showError(errorEl, data.message || 'Login failed');
     }
@@ -94,8 +107,7 @@ signupForm.addEventListener('submit', async (e) => {
       localStorage.setItem('authToken', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
       
-      // Redirect to main page
-      window.location.href = 'index.html';
+      window.location.href = 'portal.html';
     } else {
       showError(errorEl, data.message || 'Signup failed');
     }
@@ -117,7 +129,7 @@ document.getElementById('guestBtn').addEventListener('click', () => {
   
   localStorage.setItem('user', JSON.stringify(guestUser));
   localStorage.setItem('authToken', 'guest_token');
-  window.location.href = 'index.html';
+  window.location.href = 'portal.html';
 });
 
 // Offline fallback functions
@@ -130,7 +142,7 @@ function handleOfflineLogin(email, password, errorEl) {
     delete userData.password;
     localStorage.setItem('user', JSON.stringify(userData));
     localStorage.setItem('authToken', 'offline_' + user.id);
-    window.location.href = 'index.html';
+    window.location.href = 'portal.html';
   } else {
     showError(errorEl, 'Invalid credentials (Offline mode)');
   }
@@ -160,7 +172,7 @@ function handleOfflineSignup(username, email, password, errorEl) {
   delete userData.password;
   localStorage.setItem('user', JSON.stringify(userData));
   localStorage.setItem('authToken', 'offline_' + newUser.id);
-  window.location.href = 'index.html';
+  window.location.href = 'portal.html';
 }
 
 function showError(element, message) {
@@ -171,5 +183,5 @@ function showError(element, message) {
 
 // Check if already logged in
 if (localStorage.getItem('authToken')) {
-  window.location.href = 'index.html';
+  window.location.href = 'portal.html';
 }

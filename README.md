@@ -1,115 +1,77 @@
-# 🎮 Game Portal
+# 🎮 Hyper Plays
 
-A modern gaming platform similar to Poki, featuring multiple games with user authentication and progress tracking. Built with a stunning red/black contrasting color scheme.
+Hyper Plays is a browser arcade platform with a full gaming UI redesign (2026) focused on quick game discovery, fullscreen play, and account-linked progress.
 
-## 🌟 Features
+## 🌟 What’s New in the Redesign
 
-- **User Authentication**: Secure login/signup system with JWT tokens
-- **Progress Tracking**: All game scores and stats are automatically saved
-- **6 Built-in Games**:
-  - 🐍 Crazy Snake - Classic snake game
-  - 👻 Haunted Calculator - Spooky puzzle game
-  - 🏓 Ping Pong - Play against AI
-  - 🦖 Dino Run - Chrome dino-style runner
-  - 💭 Word Guesser - Hangman-style word game
-  - ⚡ Reaction Time - Test your reflexes
+- **Redesigned Landing Experience** (`index.html`)
+  - Hero dashboard, spotlight cards, category pills, search, and quick launch.
+- **Redesigned Auth Flow** (`login.html`, `register.html`)
+  - Modern gaming-style forms, guest mode, password show/hide, offline fallback.
+- **Redesigned Portal Command Center** (`portal.html`)
+  - Player overview stats, game filtering, search, fullscreen game shell, HUD controls.
+- **Redesigned Supporting Pages**
+  - `about.html` now matches the same visual system.
+  - `tests/tests.html` is now a styled interactive utility test runner.
 
-- **Modern UI**: Sleek red/black design with smooth animations
-- **Real-time Search**: Filter games instantly
-- **Offline Support**: Works without backend connection
-- **Minimizable Player**: Play games in floating window
-- **Responsive Design**: Works on all devices
+## 🧩 Core Features
+
+- Secure authentication with JWT and local offline fallback.
+- Progress tracking API integration with local fallback storage.
+- Fullscreen game launch with pause/resume/replay/exit controls.
+- Local high-score persistence per user and per game.
+- Responsive layouts across desktop and mobile.
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 
-- Node.js (v14 or higher)
-- npm or yarn
+- Node.js (v14+)
+- npm
 
-### Installation
+### Install and Run
 
-1. **Install dependencies:**
+1. Install dependencies:
    ```powershell
    npm install
    ```
 
-2. **Start the backend server:**
+2. Start backend API server:
    ```powershell
    npm start
    ```
-   Server will run on `http://localhost:3000`
 
-3. **Open the application:**
-   - Open `index.html` in your browser, or
-   - Use a local server like Live Server (VS Code extension)
+3. Open frontend:
+   - Open `index.html` directly, or
+   - Use a static host / VS Code Live Server.
 
-### Using Live Server (Recommended)
+Server runs on `http://localhost:3000` by default.
 
-If you have the Live Server extension in VS Code:
-1. Right-click on `index.html`
-2. Select "Open with Live Server"
-3. The app will open at `http://127.0.0.1:5500` (or similar)
+## 🗺️ Main UX Flow
 
-## 📁 Project Structure
+1. Open `index.html`.
+2. Use **Account** or **Launch Portal**.
+3. Sign in / sign up / continue as guest.
+4. Enter `portal.html` and launch games from the dashboard.
+5. Finish rounds to save score/progress.
 
-```
-game-portal/
-├── index.html              # Main portal page
-├── login.html             # Authentication page
-├── login.css              # Login page styles
-├── login.js               # Login logic
-├── portal.app.js          # Main application logic
-├── portal.style.css       # Main styles
-├── server.js              # Backend server
-├── package.json           # Dependencies
-├── .env                   # Environment variables
-│
-└── games/                 # Individual game folders
-    ├── snake/
-    │   └── index.html
-    ├── haunted/
-    │   ├── index.html
-    │   ├── cj.js
-    │   └── csy.css
-    ├── pingpong/
-    │   └── index.html
-    ├── dino/
-    │   └── index.html
-    ├── wordguesser/
-    │   └── index.html
-    └── reactiontime/
-        └── index.html
-```
+## 📁 Key Files
 
-## 🎯 How to Use
+- `index.html`, `style.css`, `script.js` → Landing UI + interactions
+- `login.html`, `login.css`, `login.js` → Auth UI + logic
+- `register.html` → Standalone registration flow
+- `portal.html`, `portal.style.css`, `portal.app.js` → Main game command center
+- `about.html` → Product/about overview
+- `tests/tests.html` → Utility test runner
+- `server.js` → API backend
 
-### First Time Setup
+## 🧪 Test Runner
 
-1. Open the application (it will redirect to login page)
-2. Click "Sign Up" tab
-3. Create an account with username, email, and password
-4. You'll be automatically logged in
+Open `tests/tests.html` in browser to run utility tests for `shared/utils.js`.
 
-### Playing Games
+## 🔧 Configuration
 
-1. Browse the game grid on the main page
-2. Use the search bar to filter games
-3. Click "Play" on any game to launch it
-4. Your progress is automatically saved
-5. Games can be minimized while playing
-
-### Guest Mode
-
-- Click "Continue as Guest" on login page
-- Progress won't be saved to server
-- Local storage will be used instead
-
-## � Configuration
-
-### Backend Settings
-
-Edit `.env` file to configure:
+Create/update `.env`:
 
 ```env
 PORT=3000
@@ -117,103 +79,46 @@ JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
 NODE_ENV=development
 ```
 
-### Adding New Games
+## 🎮 Adding a New Game
 
-1. Create a new folder in `games/` directory
-2. Add your game's `index.html` and assets
-3. Update `GAMES` array in `portal.app.js`:
-
-```javascript
-const GAMES = [
-  // ... existing games
-  { 
-    id:'your-game', 
-    title:'Your Game Title', 
-    category:'Category', 
-    embed:'./games/your-game/index.html' 
-  }
-];
-```
-
-4. Send game over message from your game:
+1. Create a folder under `games/` with an `index.html`.
+2. Add the game entry in `portal.app.js` `GAMES` array.
+3. (Optional) Add a matching thumbnail under `assets/thumbs/` and map it in `THUMBS`.
+4. Post result events from the game:
 
 ```javascript
 window.parent.postMessage({
   type: 'game_over',
-  gameId: 'your-game',
-  result: 'won', // or 'lost'
-  score: 1000
+  gameId: 'your-game-id',
+  result: 'completed',
+  score: 123
 }, '*');
 ```
 
-## 🎨 Customization
-
-### Changing Colors
-
-Edit CSS variables in `portal.style.css`:
-
-```css
-:root {
-  --bg-1: #0a0000;
-  --bg-2: #1a0505;
-  --accent: #ff0000;
-  --accent-2: #ff3333;
-  --muted: #ff6b6b;
-}
-```
-
-## 📊 API Endpoints
+## 📡 API Endpoints
 
 ### Authentication
-- `POST /api/auth/signup` - Create new account
-- `POST /api/auth/login` - Login
-- `GET /api/auth/me` - Get current user
+- `POST /api/auth/signup`
+- `POST /api/auth/login`
+- `GET /api/auth/me`
 
-### Progress Tracking
-- `POST /api/progress` - Save game progress
-- `GET /api/progress/:gameId` - Get progress for specific game
-- `GET /api/progress` - Get all user progress
-- `GET /api/leaderboard/:gameId` - Get game leaderboard
-
-## � Security Notes
-
-⚠️ **Important for Production:**
-- Change the `JWT_SECRET` in `.env`
-- Use a real database (MongoDB, PostgreSQL, etc.)
-- Add HTTPS
-- Implement rate limiting
-- Add input validation
-- Hash passwords properly (already using bcrypt)
+### Progress
+- `POST /api/progress`
+- `GET /api/progress/:gameId`
+- `GET /api/progress`
+- `GET /api/leaderboard/:gameId`
 
 ## 🐛 Troubleshooting
 
-### Server won't start
-- Make sure port 3000 is not in use
-- Run `npm install` again
-- Check Node.js version
+### `EADDRINUSE: 3000`
+- Another process is already using port 3000 (often your existing server instance).
 
-### Games not loading
-- Check browser console for errors
-- Ensure all game files are in correct folders
-- Verify file paths in `GAMES` array
+### Games don’t load
+- Confirm `embed` paths in `portal.app.js` match actual files.
 
-### Progress not saving
-- Check if backend server is running
-- Verify authentication token is valid
-- Check browser console for API errors
-
-## 📝 License
-
-This project is open source and available for personal and educational use.
-
-## 🤝 Contributing
-
-Feel free to add more games or improve existing features!
-
-## � Support
-
-For issues or questions, check the browser console for error messages.
+### Progress doesn’t persist to API
+- Verify backend is running and auth token exists in localStorage.
 
 ---
 
-**Made with ❤️ for gamers everywhere!**
+Made for fast browser gaming and continuous UI iteration.

@@ -1,8 +1,12 @@
-<!DOCTYPE html>
+const fs = require('fs');
+const path = require('path');
+
+// ============ INDEX.HTML ============
+const indexHTML = `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>CHEAT LABZ — No rules. Just scores.</title>
 <meta name="description" content="CHEAT LABZ — A chaotic, fast, fun, neon-soaked browser arcade."/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
@@ -18,7 +22,7 @@
 <div id="handleModal" class="modal-overlay hidden">
   <div class="modal-box">
     <h2>SET YOUR HANDLE</h2>
-    <p class="mono">Choose a name for the leaderboard.</p>
+    <p class="mono">Choose a name for the leaderboard</p>
     <input id="handleInput" type="text" maxlength="16" placeholder="Enter nickname..." autofocus/>
     <button id="handleSave" class="btn-neon">LET'S GO</button>
   </div>
@@ -47,15 +51,14 @@
   </a>
   <nav class="nav-links">
     <a href="#hero" class="nav-a active">HOME</a>
-    <a href="#" id="navArena" class="nav-a">ARCADE</a>
-    <a href="#games" class="nav-a">GAMES</a>
+    <a href="#games" class="nav-a">ARCADE</a>
     <a href="#leaderboard" class="nav-a">LEADERBOARD</a>
+    <a href="#howtoplay" class="nav-a">HOW TO PLAY</a>
   </nav>
   <div class="header-right">
-    <button id="themeToggle" class="icon-btn" title="Toggle Theme" aria-label="Toggle dark mode">&#9790;</button>
-    <button id="sfxToggle" class="icon-btn sfx-on" title="Toggle Sound Effects" aria-label="Toggle sound effects">&#128266;</button>
-    <button id="settingsBtn" class="icon-btn" title="Open Settings" aria-label="Open settings">&#9881;</button>
-    <input id="headerHandle" type="text" maxlength="16" placeholder="Handle" aria-label="Player handle"/>
+    <button id="themeToggle" class="icon-btn" title="Toggle theme">&#9790;</button>
+    <button id="sfxToggle" class="icon-btn sfx-on" title="Toggle SFX">&#128266;</button>
+    <button id="settingsBtn" class="icon-btn" title="Settings">&#9881;</button>
     <span id="playerBadge" class="player-badge">Player</span>
   </div>
   <div class="header-glow"></div>
@@ -67,31 +70,21 @@
   <div class="hero-btns">
     <button id="browseBtn" class="btn-neon">BROWSE ALL GAMES</button>
     <button id="randomBtn" class="btn-outline">RANDOM GAME</button>
-    <button id="arenaBtn" class="btn-outline">⚔️ ENTER ARENA</button>
   </div>
   <div class="live-strip">
-    <span>&#127918; <strong id="liveGames">22</strong> Games Live</span>
+    <span>&#127918; <strong id="liveGames">16</strong> Games Live</span>
     <span>&#127942; <strong id="liveRuns">0</strong> Total Runs</span>
     <span>&#9889; Season 3 Active</span>
   </div>
 </section>
 
-<!-- DAILY CHALLENGES -->
-<section id="dailyChallenges" class="daily-section">
-  <div class="section-head">
-    <h2>⚡ DAILY CHALLENGES</h2>
-    <span id="dailyCountdown" class="daily-countdown">Resets in --:--:--</span>
-  </div>
-  <div id="dailyCards" class="daily-cards"></div>
-</section>
-
 <!-- STATS BAR -->
 <section class="stats-bar">
-  <div class="stat-pill stat-a"><span class="stat-icon">🎮</span><span class="stat-label">Most Played</span><span id="statMostPlayed" class="stat-val stat-cap">—</span></div>
-  <div class="stat-pill stat-b"><span class="stat-icon">🔥</span><span class="stat-label">Best Streak</span><span id="statStreak" class="stat-val">0</span></div>
-  <div class="stat-pill stat-c"><span class="stat-icon">🏃</span><span class="stat-label">Total Runs Tracked</span><span id="statTotalRuns" class="stat-val">Start playing to track runs!</span></div>
-  <div class="stat-pill stat-d"><span class="stat-icon">🃏</span><span class="stat-label">Favorite Category</span><span id="statFavCat" class="stat-val stat-cap">—</span></div>
-  <div class="stat-pill stat-e"><span class="stat-icon">🕒</span><span class="stat-label">Last Played</span><span id="statLastPlayed" class="stat-val stat-cap">—</span></div>
+  <div class="stat-pill"><span class="stat-label">Most Played</span><span id="statMostPlayed" class="stat-val">—</span></div>
+  <div class="stat-pill"><span class="stat-label">Best Streak</span><span id="statStreak" class="stat-val">0</span></div>
+  <div class="stat-pill"><span class="stat-label">Total Runs</span><span id="statTotalRuns" class="stat-val">0</span></div>
+  <div class="stat-pill"><span class="stat-label">Fav Category</span><span id="statFavCat" class="stat-val">—</span></div>
+  <div class="stat-pill"><span class="stat-label">Last Played</span><span id="statLastPlayed" class="stat-val">—</span></div>
 </section>
 
 <!-- HOT RIGHT NOW -->
@@ -105,9 +98,6 @@
     </div>
   </div>
   <div id="featuredRow" class="featured-row"></div>
-  <div class="spotlight-indicators" aria-hidden="true">
-    <span class="dot active"></span><span class="dot"></span><span class="dot"></span>
-  </div>
 </section>
 
 <!-- FILTER & SEARCH -->
@@ -130,14 +120,9 @@
     <button class="pill" data-filter="puzzle">PUZZLE</button>
     <button class="pill" data-filter="racing">RACING</button>
     <button class="pill" data-filter="skill">SKILL</button>
-    <button class="pill" data-filter="retro">RETRO</button>
   </div>
-  <div class="search-row">
-    <input id="searchInput" class="search-bar" type="search" placeholder="Search games..."/>
-    <button id="shuffleBtn" class="btn-shuffle">SHUFFLE</button>
-  </div>
+  <input id="searchInput" class="search-bar" type="search" placeholder="Search games..."/>
   <div id="gameGrid" class="game-grid"></div>
-  <p id="gameCount" class="game-count">Showing 0 games</p>
   <p id="emptyState" class="empty-state hidden">No games match your filters.</p>
 </section>
 
@@ -167,51 +152,8 @@
   <div id="gameFrame" class="game-frame"></div>
 </div>
 
-<!-- ARENA MODE -->
-<div id="arenaContainer" class="arena-container hidden">
-  <div class="arena-shell" id="arenaSelectView">
-    <div class="arena-header-row">
-      <h2>⚔️ ARENA MODE</h2>
-      <button id="arenaClose" class="btn-small">BACK</button>
-    </div>
-    <div class="arena-layout">
-      <div id="arenaGameGrid" class="arena-game-grid"></div>
-      <aside class="arena-rules">
-        <h3>ARENA RULES</h3>
-        <p>3 rounds. Score carries over. Difficulty ramps. Beat your best Arena Score.</p>
-        <p id="arenaPickLabel">Pick a game to begin.</p>
-        <button id="arenaStart" class="btn-neon" disabled>START ARENA</button>
-      </aside>
-    </div>
-  </div>
-
-  <div class="arena-shell hidden" id="arenaPlayView">
-    <div class="game-topbar arena-topbar">
-      <button id="arenaBackToSelect" class="btn-small">PICK NEW GAME</button>
-      <span id="arenaRoundTitle" class="game-title-bar">⚔️ ARENA — ROUND 1/3</span>
-      <span id="arenaHazards" class="arena-hazard-badge">No Hazard</span>
-    </div>
-    <div id="arenaCountdown" class="arena-round-countdown hidden">ROUND STARTING IN <b>3</b></div>
-    <div id="arenaFrame" class="game-frame"></div>
-  </div>
-
-  <div class="arena-shell hidden" id="arenaResultView">
-    <div class="arena-header-row">
-      <h2>🏆 ARENA RESULTS</h2>
-      <button id="arenaCloseResults" class="btn-small">BACK TO LOBBY</button>
-    </div>
-    <div id="arenaBreakdown" class="arena-breakdown"></div>
-    <div class="arena-actions-row">
-      <button id="arenaRunAgain" class="btn-neon">RUN AGAIN</button>
-      <button id="arenaPickNew" class="btn-outline">PICK NEW GAME</button>
-    </div>
-    <div id="arenaLeaderboard" class="lb-table"></div>
-  </div>
-</div>
-
 <!-- ACHIEVEMENT TOAST -->
 <div id="achievementToast" class="achievement-toast hidden"></div>
-<div id="shuffleToast" class="achievement-toast hidden"></div>
 
 <footer class="footer">
   <small>&copy; 2026 CHEAT L&Delta;BZ &mdash; No rules. Just scores.</small>
@@ -221,4 +163,7 @@
 <script src="shared/soundManager.js"></script>
 <script src="script.js"></script>
 </body>
-</html>
+</html>`;
+
+fs.writeFileSync('index.html', indexHTML);
+console.log('✅ index.html written');

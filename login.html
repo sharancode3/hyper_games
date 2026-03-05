@@ -29,7 +29,10 @@
           <p class="eyebrow">Account access</p>
           <h2>Welcome back</h2>
         </div>
-        <button id="guestBtn" class="ghost">Guest Mode</button>
+        <div class="head-actions">
+          <a class="ghost link" href="index.html">Back Home</a>
+          <button id="guestBtn" class="ghost">Guest Mode</button>
+        </div>
       </div>
       <div class="tabs">
         <button class="tab active" data-tab="login">Login</button>
@@ -43,7 +46,10 @@
         </div>
         <div class="form-group">
           <label for="loginPassword">Password</label>
-          <input type="password" id="loginPassword" required placeholder="••••••••" />
+          <div class="pass-wrap">
+            <input type="password" id="loginPassword" required placeholder="••••••••" />
+            <button type="button" class="pass-toggle" data-target="loginPassword">Show</button>
+          </div>
         </div>
         <button type="submit" class="btn-primary">Login & Play</button>
         <div class="error-message" id="loginError"></div>
@@ -63,11 +69,17 @@
         <div class="form-grid">
           <div class="form-group">
             <label for="signupPassword">Password</label>
-            <input type="password" id="signupPassword" required placeholder="••••••••" />
+            <div class="pass-wrap">
+              <input type="password" id="signupPassword" required placeholder="••••••••" />
+              <button type="button" class="pass-toggle" data-target="signupPassword">Show</button>
+            </div>
           </div>
           <div class="form-group">
             <label for="signupConfirm">Confirm Password</label>
-            <input type="password" id="signupConfirm" required placeholder="••••••••" />
+            <div class="pass-wrap">
+              <input type="password" id="signupConfirm" required placeholder="••••••••" />
+              <button type="button" class="pass-toggle" data-target="signupConfirm">Show</button>
+            </div>
           </div>
         </div>
         <button type="submit" class="btn-primary">Create account</button>
