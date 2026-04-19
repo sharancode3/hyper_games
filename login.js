@@ -51,6 +51,11 @@ loginForm.addEventListener('submit', async (e) => {
   const password = document.getElementById('loginPassword').value;
   const errorEl = document.getElementById('loginError');
   
+  if (isGitHubPages) {
+    showError(errorEl, '📌 GitHub Pages Mode: Accounts unavailable. Use Guest Mode to play.');
+    return;
+  }
+  
   try {
     const response = await fetch(`${API_URL}/auth/login`, {
       method: 'POST',
@@ -85,6 +90,11 @@ signupForm.addEventListener('submit', async (e) => {
   const password = document.getElementById('signupPassword').value;
   const confirm = document.getElementById('signupConfirm').value;
   const errorEl = document.getElementById('signupError');
+  
+  if (isGitHubPages) {
+    showError(errorEl, '📌 GitHub Pages Mode: Accounts unavailable. Use Guest Mode to play.');
+    return;
+  }
   
   // Validation
   if (password !== confirm) {

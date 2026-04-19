@@ -369,7 +369,8 @@ function updateStats() {
 }
 
 async function saveGameProgress(gameId, score, stats, result) {
-  if (!gameId || !state.token) return;
+  if (!gameId || !API_URL) return;  // Skip if no backend API
+  if (!state.token) return;
 
   try {
     await fetch(`${API_URL}/progress`, {
