@@ -23,7 +23,7 @@ Hyper Plays is a production-grade gaming platform built for the modern browser. 
 - **🎯 Modern Architecture**: Express.js backend with JWT authentication and REST API
 - **🔐 Enterprise-Grade Security**: Secure token-based authentication with offline fallback
 - **📊 Real-Time Progress Tracking**: Persistent player statistics and leaderboards
-- **🎮 15+ Original Games**: All games are custom-built in-house, experimental, and constantly evolving
+- **🎮 11 Original Games**: All games are custom-built in-house, experimental, and constantly evolving
 - **📱 Responsive Design**: Optimized for desktop, tablet, and mobile devices
 - **⚡ Fullscreen Gaming**: Immersive game experience with in-game controls
 - **🌐 Guest Mode**: Play without authentication
@@ -35,7 +35,7 @@ Hyper Plays is a production-grade gaming platform built for the modern browser. 
 
 ### Live Demo (GitHub Pages - Frontend Only)
 **[🎮 Play Now](https://sharancode3.github.io/CHEAT-LABZ/)** - Play all games instantly, no setup required!
-- ✅ All 15+ games playable
+- ✅ All 11 games playable
 - ✅ Local score persistence (browser storage)
 - ⚠️ No user accounts or backend features (guest mode only)
 
@@ -143,7 +143,7 @@ Follow the [Quick Start](#quick-start) below to run locally with:
 ├── login.html              # Authentication flow
 ├── register.html           # User registration
 ├── server.js               # Express backend
-├── games/                  # Game collection (15+ titles)
+├── games/                  # Game collection (11 titles)
 │   ├── snake/
 │   ├── wordle/
 │   ├── bubbleshooter/
@@ -177,21 +177,17 @@ We embrace the experimental nature of game development—expect features to be r
 
 | Game | Type | Description |
 |------|------|-------------|
-| **Snake** | Action | Classic snake gameplay |
-| **Wordle** | Puzzle | Word guessing game |
-| **Bubble Shooter** | Action | Bubble matching arcade |
-| **Dino Runner** | Action | Dinosaur endless runner |
-| **Memory Grid** | Puzzle | Memory card matching |
-| **Monkey Type** | Typing | Typing speed challenge |
-| **Pong** | Classic | Two-player pong game |
-| **Reaction Time** | Reflex | Reaction speed test |
-| **Pixel Dodge** | Action | Dodge obstacles |
-| **Word Guesser** | Puzzle | Word puzzle game |
-| **Haunted** | Adventure | Spooky adventure game |
-| **Key Frenzy** | Reflex | Keyboard speed test |
-| **Hyper Tap** | Reflex | Rapid tap game |
-| **Neon Pong** | Classic | Modern pong variant |
-| **Puzzle** | Puzzle | Puzzle game collection |
+| **Neon Serpent** | Arcade | Classic snake gameplay with synth combos |
+| **Loop Rally** | Arcade | Laser-fast paddle rallies with looping shots |
+| **Orb Pop Deluxe** | Arcade | Bubble matching with color combinations |
+| **Astro Strider** | Arcade | Dinosaur endless runner through cosmic obstacles |
+| **Turbo Drift** | Racing | Slide through neon corners and chase best laps |
+| **Slide Forge** | Puzzle | Craft pictures one satisfying move at a time |
+| **Word Pulse** | Puzzle | Word guessing challenge with hints and penalties |
+| **Cipher Quest** | Puzzle | Guess words under pressure with streak bonuses |
+| **Phantom Calc** | Puzzle | Haunted math riddles with glitching display |
+| **Key Frenzy** | Skill | Typing gauntlet for lightning-fast accuracy |
+| **Blink Lab** | Skill | Minimal reflex trials to shave off milliseconds |
 
 ---
 
@@ -392,11 +388,8 @@ npm install
 # Start development server
 npm start
 
-# Run tests
-npm test
-
-# Build for production
-npm run build
+# Start with auto-reload (requires nodemon)
+npm run dev
 ```
 
 ---
@@ -416,7 +409,7 @@ npm run build
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
 
 ---
 
